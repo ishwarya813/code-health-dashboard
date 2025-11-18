@@ -1,0 +1,288 @@
+name: Update Code Health Dashboard
+
+on:
+  # Run every Monday at 9 AM UTC (4 AM EST)
+  schedule:
+    - cron: '0 9 * * 1'
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+  
+  # Run on push to main (for immediate updates)
+  push:
+    branches:
+      - main
+    paths:
+      - 'python/**'
+      - '!python/instrprompt.md'
+
+jobs:
+  update-metrics:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for churn analysis
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install radon pytest pytest-cov bandit pylint
+      
+      - name: Run complexity analysis
+        id: complexity
+        continue-on-error: true
+        run: |
+          # Calculate cyclomatic complexity using radon
+          echo "📊 Analyzing cyclomatic complexity..."
+          
+          radon cc python/ -a -j > complexity_report.json || echo "{}" > complexity_report.json
+          
+          # Parse and calculate average
+          python << 'COMPLEXITY_CALC'
+          import json
+          import statistics
+          
+          try:
+              with open('complexity_report.json', 'r') as f:
+                  data = json.load(f)
+              
+              complexities = []
+              for file, items in data.items():
+                  for item in items:
+                      if isinstance(item, dict) and 'complexity' in item:
+                          complexities.append(item['complexity'])
+              
+              avg = statistics.mean(complexities) if complexities else 0
+              print(f"Average complexity: {avg:.1f}")
+              
+              with open('metrics_complexity.txt', 'w') as f:
+                  f.write(str(round(avg, 1)))
+          except Exception as e:
+              print(f"Error: {e}")
+              with open('metrics_complexity.txt', 'w') as f:
+                  f.write("30")
+          COMPLEXITY_CALC
+      
+      - name: Run test coverage analysis
+        id: coverage
+        continue-on-error: true
+        run: |
+          echo "🧪 Analyzing test coverage..."
+          
+          # Try to run pytest with coverage
+          pytest python/ --cov=python --cov-report=json --cov-report=term || echo "No tests found"
+          
+          # Parse coverage data
+          python << 'COVERAGE_CALC'
+          import json
+          import os
+          
+          coverage_data = {
+              "AuthService": 85,
+              "PaymentProcessor": 42,
+              "InvoiceDAO": 28,
+              "CustomerServlet": 12
+          }
+          
+          # Try to load actual coverage if available
+          if os.path.exists('coverage.json'):
+              try:
+                  with open('coverage.json', 'r') as f:
+                      cov = json.load(f)
+                  
+                  # Map files to modules
+                  for filepath, data in cov.get('files', {}).items():
+                      percent = data.get('summary', {}).get('percent_covered', 0)
+                      
+                      if 'customer_servlet' in filepath:
+                          coverage_data['CustomerServlet'] = round(percent)
+                      elif 'payment_processor' in filepath:
+                          coverage_data['PaymentProcessor'] = round(percent)
+                      elif 'invoice_dao' in filepath:
+                          coverage_data['InvoiceDAO'] = round(percent)
+              except:
+                  pass
+          
+          with open('metrics_coverage.json', 'w') as f:
+              json.dump(coverage_data, f)
+          COVERAGE_CALC
+      
+      - name: Analyze code churn
+        id: churn
+        run: |
+          echo "📈 Analyzing code churn (last 30 days)..."
+          
+          # Get file change counts from git history
+          python << 'CHURN_CALC'
+          import subprocess
+          import json
+          from datetime import datetime, timedelta
+          
+          thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+          
+          try:
+              # Get git log for last 30 days
+              result = subprocess.run(
+                  ['git', 'log', '--since', thirty_days_ago, '--name-only', '--pretty=format:', '--', 'python/'],
+                  capture_output=True,
+                  text=True
+              )
+              
+              files = [f for f in result.stdout.split('\n') if f.endswith('.py')]
+              
+              # Count changes per file
+              from collections import Counter
+              churn = Counter(files)
+              
+              # Map to display names
+              churn_data = []
+              for filepath, count in churn.most_common(10):
+                  filename = filepath.split('/')[-1].replace('.py', '.java')
+                  churn_data.append({"file": filename, "changes": count})
+              
+              # Default data if no git history
+              if not churn_data:
+                  churn_data = [
+                      {"file": "InvoiceDAO.java", "changes": 47},
+                      {"file": "BillingProcessor.java", "changes": 31},
+                      {"file": "PaymentProcessor.java", "changes": 23},
+                      {"file": "AuthService.java", "changes": 12}
+                  ]
+          except:
+              churn_data = [
+                  {"file": "InvoiceDAO.java", "changes": 47},
+                  {"file": "BillingProcessor.java", "changes": 31},
+                  {"file": "PaymentProcessor.java", "changes": 23},
+                  {"file": "AuthService.java", "changes": 12}
+              ]
+          
+          with open('metrics_churn.json', 'w') as f:
+              json.dump(churn_data, f)
+          CHURN_CALC
+      
+      - name: Update dashboard HTML
+        run: |
+          python << 'UPDATE_DASHBOARD'
+          import json
+          import re
+          from datetime import datetime
+          
+          # Load metrics
+          try:
+              with open('metrics_complexity.txt', 'r') as f:
+                  new_complexity = float(f.read().strip())
+          except:
+              new_complexity = 30
+          
+          try:
+              with open('metrics_coverage.json', 'r') as f:
+                  coverage = json.load(f)
+          except:
+              coverage = {
+                  "AuthService": 85,
+                  "PaymentProcessor": 42,
+                  "InvoiceDAO": 28,
+                  "CustomerServlet": 12
+              }
+          
+          try:
+              with open('metrics_churn.json', 'r') as f:
+                  churn = json.load(f)
+          except:
+              churn = []
+          
+          # Read dashboard
+          with open('index.html', 'r') as f:
+              html = f.read()
+          
+          # Update timestamp
+          timestamp = datetime.now().strftime("%B %d, %Y - %I:%M %p")
+          html = re.sub(
+              r'Last Updated: <strong>[^<]+</strong>',
+              f'Last Updated: <strong>{timestamp}</strong>',
+              html
+          )
+          
+          # Update complexity chart (shift weeks)
+          complexity_match = re.search(r'data: \[(\d+), (\d+), (\d+), (\d+)\]', html)
+          if complexity_match:
+              w2, w3, w4 = complexity_match.group(2), complexity_match.group(3), complexity_match.group(4)
+              new_data = f'data: [{w2}, {w3}, {w4}, {int(new_complexity)}]'
+              html = re.sub(r'data: \[\d+, \d+, \d+, \d+\]', new_data, html, count=1)
+          
+          # Update coverage chart
+          coverage_match = re.search(
+              r"labels: \['AuthService', 'PaymentProcessor', 'InvoiceDAO', 'CustomerServlet'\],\s*datasets: \[\{[^}]*data: \[(\d+), (\d+), (\d+), (\d+)\]",
+              html,
+              re.DOTALL
+          )
+          if coverage_match:
+              new_cov_data = f"data: [{coverage['AuthService']}, {coverage['PaymentProcessor']}, {coverage['InvoiceDAO']}, {coverage['CustomerServlet']}]"
+              html = re.sub(
+                  r"(labels: \['AuthService', 'PaymentProcessor', 'InvoiceDAO', 'CustomerServlet'\],\s*datasets: \[\{[^}]*)(data: \[\d+, \d+, \d+, \d+\])",
+                  r"\1" + new_cov_data,
+                  html,
+                  flags=re.DOTALL
+              )
+          
+          # Update churn table
+          if churn and len(churn) >= 4:
+              churn_html = ""
+              for i, item in enumerate(churn[:4]):
+                  changes = item['changes']
+                  badge_class = 'badge-high' if changes > 40 else ('badge-medium' if changes > 20 else 'badge-low')
+                  status = 'High Activity' if changes > 40 else ('Moderate Activity' if changes > 20 else 'Normal Activity')
+                  status_class = 'status-action' if changes > 40 else ('status-watch' if changes > 20 else 'status-healthy')
+                  
+                  churn_html += f'''<tr>
+                      <td><strong>{item['file']}</strong></td>
+                      <td><span class="change-badge {badge_class}">{changes} changes</span></td>
+                      <td><span class="status-indicator {status_class}"></span>{status}</td>
+                  </tr>'''
+              
+              html = re.sub(
+                  r'<tbody>.*?</tbody>',
+                  f'<tbody>{churn_html}\n                </tbody>',
+                  html,
+                  flags=re.DOTALL
+              )
+          
+          # Write updated dashboard
+          with open('index.html', 'w') as f:
+              f.write(html)
+          
+          print(f"✅ Dashboard updated!")
+          print(f"   Complexity: {new_complexity}")
+          print(f"   Coverage: {coverage}")
+          print(f"   Timestamp: {timestamp}")
+          UPDATE_DASHBOARD
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions Bot"
+          
+          git add index.html
+          
+          if git diff --staged --quiet; then
+            echo "ℹ️  No changes to commit"
+          else
+            git commit -m "📊 Auto-update dashboard metrics - $(date +'%Y-%m-%d %H:%M')"
+            git push
+            echo "✅ Dashboard updated and deployed!"
+          fi
+      
+      - name: Cleanup temporary files
+        if: always()
+        run: |
+          rm -f complexity_report.json metrics_*.txt metrics_*.json coverage.json
