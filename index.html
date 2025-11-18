@@ -238,7 +238,7 @@
         <!-- Header -->
         <div class="header">
             <h1>📊 Code Health Observatory</h1>
-            <p class="last-updated">Last Updated: <strong>November 18, 2025 - 09:45 AM</strong></p>
+            <p class="last-updated">Last Updated: <strong>November 18, 2025 - 12:46 PM</strong></p>
         </div>
 
         <!-- This Sprint's Win -->
@@ -246,7 +246,7 @@
             <span class="win-label">🎉 This Sprint's Win</span>
             <h2>Success Story</h2>
             <div class="win-content">
-                Reduced complexity in PaymentProcessor from 42 → 28
+                Reduced average complexity from 5 → 3 (-2 points)
             </div>
         </div>
 
@@ -348,10 +348,10 @@
         const complexityChart = new Chart(complexityCtx, {
             type: 'line',
             data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                labels: ['customer_servlet.py', 'invoice_dao.py', 'payment_processor.py', 'auth_service.py'],
                 datasets: [{
                     label: 'Avg Complexity',
-                    data: [38, 35, 32, 30],
+                    data: [12, 28, 42, 85],
                     borderColor: '#667eea',
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
                     borderWidth: 3,
