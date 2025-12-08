@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-01T09:23:48.794101",
+  "timestamp": "2025-12-08T09:24:24.202774",
   "avg_complexity": 3.1,
   "max_complexity": 15,
   "function_count": 27,
@@ -35,10 +35,6 @@
   "trends": {
     "complexity_history": [
       {
-        "date": "2025-11-18T12:46:29.395935",
-        "avg_complexity": 3.1
-      },
-      {
         "date": "2025-11-18T17:51:08.174918",
         "avg_complexity": 3.1
       },
@@ -48,6 +44,10 @@
       },
       {
         "date": "2025-12-01T09:23:48.794094",
+        "avg_complexity": 3.1
+      },
+      {
+        "date": "2025-12-08T09:24:24.202767",
         "avg_complexity": 3.1
       }
     ]
