@@ -278,23 +278,27 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>InvoiceDAO.java</td>
-                            <td style="text-align: right;"><span class="change-count critical">47</span></td>
-                        </tr>
-                        <tr>
-                            <td>BillingProcessor.java</td>
-                            <td style="text-align: right;"><span class="change-count warning">31</span></td>
-                        </tr>
-                        <tr>
-                            <td>PaymentProcessor.java</td>
-                            <td style="text-align: right;"><span class="change-count warning">23</span></td>
-                        </tr>
-                        <tr>
-                            <td>AuthService.java</td>
-                            <td style="text-align: right;"><span class="change-count ok">12</span></td>
-                        </tr>
-                    </tbody>
+                    <tr>
+                        <td><strong>scripts/update_dashboard.py</strong></td>
+                        <td><span class="change-count">2</span></td>
+                        <td><span class="badge badge-green">Normal Activity</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>scripts/analyze_metrics.py</strong></td>
+                        <td><span class="change-count">1</span></td>
+                        <td><span class="badge badge-green">Normal Activity</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>python/customer_servlet.py</strong></td>
+                        <td><span class="change-count">1</span></td>
+                        <td><span class="badge badge-green">Normal Activity</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>python/invoice_dao.py</strong></td>
+                        <td><span class="change-count">1</span></td>
+                        <td><span class="badge badge-green">Normal Activity</span></td>
+                    </tr>
+                </tbody>
                 </table>
             </div>
 
@@ -342,7 +346,7 @@
 
         // Complexity Trend Chart
         const complexityCtx = document.getElementById('complexityChart').getContext('2d');
-        const complexityData = [38, 35, 32, 30];
+        const complexityData = [36, 34, 32, 30];
         
         new Chart(complexityCtx, {
             type: 'line',
@@ -406,7 +410,7 @@
             { module: 'AuthService', coverage: 85 },
             { module: 'PaymentProcessor', coverage: 42 },
             { module: 'InvoiceDAO', coverage: 28 },
-            { module: 'CustomerServlet', coverage: 12 }
+            { module: 'CustomerServlet', coverage: 12 },
         ];
 
         new Chart(coverageCtx, {

@@ -1,16 +1,54 @@
 {
-  "timestamp": "2025-12-08T09:24:24.202774",
-  "avg_complexity": 3.1,
-  "max_complexity": 15,
-  "function_count": 27,
-  "high_complexity_count": 0,
-  "coverage": {
-    "customer_servlet.py": 12,
-    "invoice_dao.py": 28,
-    "payment_processor.py": 42,
-    "auth_service.py": 85
-  },
-  "churn": [
+  "last_updated": "2025-12-09T18:07:11.415476",
+  "complexity_trend": [
+    {
+      "week": "Week 1",
+      "complexity": 36,
+      "date": "2025-11-18"
+    },
+    {
+      "week": "Week 2",
+      "complexity": 34,
+      "date": "2025-11-25"
+    },
+    {
+      "week": "Week 3",
+      "complexity": 32,
+      "date": "2025-12-02"
+    },
+    {
+      "week": "Week 4",
+      "complexity": 30,
+      "date": "2025-12-09"
+    }
+  ],
+  "test_coverage": [
+    {
+      "name": "AuthService",
+      "coverage": 85
+    },
+    {
+      "name": "PaymentProcessor",
+      "coverage": 42
+    },
+    {
+      "name": "InvoiceDAO",
+      "coverage": 28
+    },
+    {
+      "name": "CustomerServlet",
+      "coverage": 12
+    }
+  ],
+  "code_churn": [
+    {
+      "file": "scripts/update_dashboard.py",
+      "changes": 2
+    },
+    {
+      "file": "scripts/analyze_metrics.py",
+      "changes": 1
+    },
     {
       "file": "python/customer_servlet.py",
       "changes": 1
@@ -18,217 +56,6 @@
     {
       "file": "python/invoice_dao.py",
       "changes": 1
-    },
-    {
-      "file": "python/payment_processor.py",
-      "changes": 1
-    },
-    {
-      "file": "scripts/analyze_code_health.py",
-      "changes": 1
-    },
-    {
-      "file": "scripts/update_dashboard.py",
-      "changes": 1
     }
-  ],
-  "trends": {
-    "complexity_history": [
-      {
-        "date": "2025-11-18T17:51:08.174918",
-        "avg_complexity": 3.1
-      },
-      {
-        "date": "2025-11-24T09:45:22.768987",
-        "avg_complexity": 3.1
-      },
-      {
-        "date": "2025-12-01T09:23:48.794094",
-        "avg_complexity": 3.1
-      },
-      {
-        "date": "2025-12-08T09:24:24.202767",
-        "avg_complexity": 3.1
-      }
-    ]
-  },
-  "files": {
-    "invoice_dao.py": {
-      "complexity": 16,
-      "functions": [
-        {
-          "name": "__init__",
-          "complexity": 1,
-          "lines": 3,
-          "file": "invoice_dao.py"
-        },
-        {
-          "name": "get_invoice",
-          "complexity": 3,
-          "lines": 27,
-          "file": "invoice_dao.py"
-        },
-        {
-          "name": "get_invoices_by_customer",
-          "complexity": 3,
-          "lines": 27,
-          "file": "invoice_dao.py"
-        },
-        {
-          "name": "create_invoice",
-          "complexity": 2,
-          "lines": 15,
-          "file": "invoice_dao.py"
-        },
-        {
-          "name": "update_invoice_status",
-          "complexity": 2,
-          "lines": 15,
-          "file": "invoice_dao.py"
-        },
-        {
-          "name": "delete_invoice",
-          "complexity": 2,
-          "lines": 15,
-          "file": "invoice_dao.py"
-        },
-        {
-          "name": "search_invoices",
-          "complexity": 3,
-          "lines": 34,
-          "file": "invoice_dao.py"
-        }
-      ]
-    },
-    "customer_servlet.py": {
-      "complexity": 38,
-      "functions": [
-        {
-          "name": "__init__",
-          "complexity": 1,
-          "lines": 3,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "create_customer",
-          "complexity": 1,
-          "lines": 16,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "update_email",
-          "complexity": 2,
-          "lines": 5,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "update_credit_limit",
-          "complexity": 3,
-          "lines": 7,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "approve_credit_increase",
-          "complexity": 8,
-          "lines": 34,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "update_phone",
-          "complexity": 2,
-          "lines": 5,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "get_customer",
-          "complexity": 1,
-          "lines": 2,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "close_account",
-          "complexity": 6,
-          "lines": 25,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "validate_customer_data",
-          "complexity": 9,
-          "lines": 14,
-          "file": "customer_servlet.py"
-        },
-        {
-          "name": "calculate_available_credit",
-          "complexity": 5,
-          "lines": 16,
-          "file": "customer_servlet.py"
-        }
-      ]
-    },
-    "payment_processor.py": {
-      "complexity": 31,
-      "functions": [
-        {
-          "name": "__init__",
-          "complexity": 1,
-          "lines": 4,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "process_payment",
-          "complexity": 15,
-          "lines": 56,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_process_small_payment",
-          "complexity": 2,
-          "lines": 15,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_process_medium_payment",
-          "complexity": 2,
-          "lines": 19,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_process_large_payment",
-          "complexity": 3,
-          "lines": 24,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_process_bank_transfer",
-          "complexity": 2,
-          "lines": 17,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_process_paypal",
-          "complexity": 2,
-          "lines": 16,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_send_confirmation_email",
-          "complexity": 1,
-          "lines": 3,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "_notify_fraud_team",
-          "complexity": 1,
-          "lines": 3,
-          "file": "payment_processor.py"
-        },
-        {
-          "name": "process",
-          "complexity": 2,
-          "lines": 9,
-          "file": "payment_processor.py"
-        }
-      ]
-    }
-  }
+  ]
 }
