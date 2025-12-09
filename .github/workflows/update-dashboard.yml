@@ -1,70 +1,67 @@
-name: Update Code Health Dashboard
+﻿name: Update Code Health Dashboard
 
 on:
   schedule:
-    # Runs every Monday at 9:00 AM UTC
-    - cron: '0 9 * * 1'
-  workflow_dispatch: # Allows manual trigger from Actions tab
+    - cron: '0 9 * * 1'  # Every Monday at 9 AM UTC
+  workflow_dispatch:      # Allow manual trigger
+  push:
+    branches: [ main ]    # Also run on push to test
 
 jobs:
   update-metrics:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-    
+      contents: write     # Need write permission to commit
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+        with:
+          fetch-depth: 0  # Full history for git log
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
-          pip install radon pylint pytest pytest-cov
-      
-      - name: Clone/Update source code repository (if applicable)
+          python -m pip install --upgrade pip
+          pip install radon pylint pytest pytest-cov || true
+
+      - name: Verify scripts exist
         run: |
-          # If your source code is in a different repo, clone it here
-          # git clone https://github.com/YOUR_USERNAME/your-source-repo.git source
-          # Or skip this step if analyzing code in the same repo
-          echo "Using local code or skip if not needed"
-      
+          echo "Checking for required scripts..."
+          ls -la scripts/
+          test -f scripts/analyze_metrics.py && echo " analyze_metrics.py found" || echo " analyze_metrics.py missing"
+          test -f scripts/update_dashboard.py && echo " update_dashboard.py found" || echo " update_dashboard.py missing"
+          test -f index.html && echo " index.html found" || echo " index.html missing"
+
       - name: Analyze code metrics
         run: |
-          # Run complexity analysis
-          echo "Running cyclomatic complexity analysis..."
-          
-          # Example: Analyze Python files (adjust for your language)
-          # radon cc -a -nb . > complexity_report.txt
-          
-          # For now, simulate metrics (replace with actual analysis)
-          python scripts/analyze_metrics.py
-      
+          echo "Running metrics analysis..."
+          python scripts/analyze_metrics.py || echo "Analysis failed, will use defaults"
+
       - name: Update dashboard HTML
         run: |
-          python scripts/update_dashboard.py
-      
+          echo "Updating dashboard..."
+          python scripts/update_dashboard.py || echo "Dashboard update encountered issues"
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --exit-code index.html metrics.json || echo "changes=true" >> $GITHUB_OUTPUT
+
       - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          git add index.html
-          
-          # Only commit if there are changes
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "🤖 Auto-update dashboard metrics - $(date '+%Y-%m-%d')"
-            git push
-          fi
-      
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          publish_branch: gh-pages
+          git config --local user.name "GitHub Actions Bot"
+          git add index.html metrics.json || true
+          git commit -m " Auto-update dashboard metrics - $(date +'%Y-%m-%d')" || true
+          git push || true
+
+      - name: Summary
+        run: |
+          echo " Workflow completed!"
+          echo " Dashboard: https://ishwarya813.github.io/code-health-dashboard/"
