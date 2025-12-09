@@ -1,0 +1,70 @@
+name: Update Code Health Dashboard
+
+on:
+  schedule:
+    # Runs every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allows manual trigger from Actions tab
+
+jobs:
+  update-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install radon pylint pytest pytest-cov
+      
+      - name: Clone/Update source code repository (if applicable)
+        run: |
+          # If your source code is in a different repo, clone it here
+          # git clone https://github.com/YOUR_USERNAME/your-source-repo.git source
+          # Or skip this step if analyzing code in the same repo
+          echo "Using local code or skip if not needed"
+      
+      - name: Analyze code metrics
+        run: |
+          # Run complexity analysis
+          echo "Running cyclomatic complexity analysis..."
+          
+          # Example: Analyze Python files (adjust for your language)
+          # radon cc -a -nb . > complexity_report.txt
+          
+          # For now, simulate metrics (replace with actual analysis)
+          python scripts/analyze_metrics.py
+      
+      - name: Update dashboard HTML
+        run: |
+          python scripts/update_dashboard.py
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add index.html
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🤖 Auto-update dashboard metrics - $(date '+%Y-%m-%d')"
+            git push
+          fi
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
