@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Health Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .last-updated {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f7fafc;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 14px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-high {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .status-medium {
+            background: #feebc8;
+            color: #c05621;
+        }
+
+        .status-low {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+
+        .win-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .win-card h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .win-card p {
+            font-size: 20px;
+            line-height: 1.6;
+        }
+
+        .priority-card {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .priority-card h2 {
+            color: #856404;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .priority-card p {
+            color: #856404;
+            font-style: italic;
+        }
+
+        .icon {
+            font-size: 24px;
+        }
+
+        .metric-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .metric-trend {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .trend-up {
+            color: #48bb78;
+        }
+
+        .trend-down {
+            color: #f56565;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .metric-summary {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .metric-value {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Code Health Dashboard</h1>
+            <p class="last-updated">Last Updated: <strong id="timestamp"></strong></p>
+        </div>
+
+        <!-- Key Metrics Summary -->
+        <div class="metric-summary">
+            <div class="metric-card">
+                <div class="metric-label">Average Complexity</div>
+                <div class="metric-value" style="color: #48bb78;">30</div>
+                <div class="metric-trend trend-up">↓ 8 from last month</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Overall Coverage</div>
+                <div class="metric-value" style="color: #ed8936;">42%</div>
+                <div class="metric-trend trend-up">↑ 14% from last month</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Code Churn</div>
+                <div class="metric-value" style="color: #ed8936;">113</div>
+                <div class="metric-trend">Last 30 days</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Critical Issues</div>
+                <div class="metric-value" style="color: #f56565;">8</div>
+                <div class="metric-trend trend-down">↓ 3 from last week</div>
+            </div>
+        </div>
+
+        <!-- This Sprint's Win -->
+        <div class="win-card">
+            <h2><span class="icon">🎉</span> This Sprint's Win</h2>
+            <p>Reduced complexity in PaymentProcessor from 42 → 28</p>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="dashboard-grid">
+            <!-- Complexity Trend Chart -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📈</span>
+                    Cyclomatic Complexity Trend (4 Weeks)
+                </div>
+                <div class="chart-container">
+                    <canvas id="complexityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Test Coverage Chart -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🎯</span>
+                    Test Coverage by Module
+                </div>
+                <div class="chart-container">
+                    <canvas id="coverageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Code Churn Hotspots Table -->
+        <div class="card" style="margin-bottom: 25px;">
+            <div class="card-title">
+                <span class="icon">🔥</span>
+                Code Churn Hotspots (Last 30 Days)
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Changes</th>
+                            <th>Risk Level</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>InvoiceDAO.java</strong></td>
+                            <td>47</td>
+                            <td><span class="status-badge status-high">High</span></td>
+                            <td>Consider refactoring or adding tests</td>
+                        </tr>
+                        <tr>
+                            <td><strong>BillingProcessor.java</strong></td>
+                            <td>31</td>
+                            <td><span class="status-badge status-medium">Medium</span></td>
+                            <td>Monitor for stability issues</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaymentProcessor.java</strong></td>
+                            <td>23</td>
+                            <td><span class="status-badge status-medium">Medium</span></td>
+                            <td>Recent refactoring - watch trends</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AuthService.java</strong></td>
+                            <td>12</td>
+                            <td><span class="status-badge status-low">Low</span></td>
+                            <td>Stable - continue monitoring</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Next Priority -->
+        <div class="priority-card">
+            <h2>🎯 Next Priority</h2>
+            <p>To be determined - add your next sprint goal here</p>
+        </div>
+    </div>
+
+    <script>
+        // Set timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Complexity Trend Line Chart
+        const complexityCtx = document.getElementById('complexityChart').getContext('2d');
+        const complexityChart = new Chart(complexityCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Cyclomatic Complexity',
+                    data: [38, 35, 32, 30],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#2d3748',
+                        padding: 12,
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 25,
+                        max: 40,
+                        ticks: {
+                            color: '#718096',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            color: '#e2e8f0'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#718096',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Test Coverage Horizontal Bar Chart
+        const coverageCtx = document.getElementById('coverageChart').getContext('2d');
+        const coverageChart = new Chart(coverageCtx, {
+            type: 'bar',
+            data: {
+                labels: ['AuthService', 'PaymentProcessor', 'InvoiceDAO', 'CustomerServlet'],
+                datasets: [{
+                    label: 'Test Coverage (%)',
+                    data: [85, 42, 28, 12],
+                    backgroundColor: [
+                        '#48bb78',  // Green for healthy (>80%)
+                        '#ed8936',  // Orange for watch (40-80%)
+                        '#f56565',  // Red for action needed (<40%)
+                        '#f56565'   // Red for action needed (<40%)
+                    ],
+                    borderRadius: 6,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#2d3748',
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.x + '% coverage';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#718096',
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: '#e2e8f0'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#718096',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
