@@ -1,67 +1,98 @@
-﻿name: Update Code Health Dashboard
+name: Update Code Health Dashboard
 
 on:
+  # Run every Monday at 9 AM UTC
   schedule:
-    - cron: '0 9 * * 1'  # Every Monday at 9 AM UTC
-  workflow_dispatch:      # Allow manual trigger
+    - cron: '0 9 * * 1'
+  
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+  
+  # Run on push to main branch (for testing)
   push:
-    branches: [ main ]    # Also run on push to test
+    branches: [ main ]
 
 jobs:
   update-metrics:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write     # Need write permission to commit
-
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full history for git log
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install radon pylint pytest pytest-cov || true
-
-      - name: Verify scripts exist
-        run: |
-          echo "Checking for required scripts..."
-          ls -la scripts/
-          test -f scripts/analyze_metrics.py && echo " analyze_metrics.py found" || echo " analyze_metrics.py missing"
-          test -f scripts/update_dashboard.py && echo " update_dashboard.py found" || echo " update_dashboard.py missing"
-          test -f index.html && echo " index.html found" || echo " index.html missing"
-
-      - name: Analyze code metrics
-        run: |
-          echo "Running metrics analysis..."
-          python scripts/analyze_metrics.py || echo "Analysis failed, will use defaults"
-
-      - name: Update dashboard HTML
-        run: |
-          echo "Updating dashboard..."
-          python scripts/update_dashboard.py || echo "Dashboard update encountered issues"
-
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git diff --exit-code index.html metrics.json || echo "changes=true" >> $GITHUB_OUTPUT
-
-      - name: Commit and push changes
-        if: steps.check_changes.outputs.changes == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "GitHub Actions Bot"
-          git add index.html metrics.json || true
-          git commit -m " Auto-update dashboard metrics - $(date +'%Y-%m-%d')" || true
-          git push || true
-
-      - name: Summary
-        run: |
-          echo " Workflow completed!"
-          echo " Dashboard: https://ishwarya813.github.io/code-health-dashboard/"
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install radon pytest-cov beautifulsoup4 lxml
+    
+    - name: Analyze codebase complexity
+      id: analyze
+      run: |
+        # Run complexity analysis on Python files
+        echo "Running complexity analysis..."
+        
+        # Get cyclomatic complexity metrics
+        if [ -d "python" ]; then
+          radon cc python/ -a -s > complexity_report.txt
+          COMPLEXITY=$(radon cc python/ -a -s | grep "Average complexity" | awk '{print $NF}' | sed 's/[()]//g')
+          echo "Current complexity: $COMPLEXITY"
+          echo "complexity=$COMPLEXITY" >> $GITHUB_OUTPUT
+        else
+          echo "complexity=30" >> $GITHUB_OUTPUT
+        fi
+        
+        # Get test coverage (if tests exist)
+        if [ -d "tests" ]; then
+          pytest --cov=python --cov-report=json tests/ || true
+          if [ -f "coverage.json" ]; then
+            COVERAGE=$(python -c "import json; data=json.load(open('coverage.json')); print(int(data['totals']['percent_covered']))")
+            echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          else
+            echo "coverage=0" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "coverage=0" >> $GITHUB_OUTPUT
+        fi
+        
+        # Get code churn (commits in last 30 days per file)
+        echo "Analyzing code churn..."
+        git log --since="30 days ago" --pretty=format: --name-only | sort | uniq -c | sort -rn | head -5 > churn_report.txt
+        cat churn_report.txt
+    
+    - name: Update dashboard HTML
+      run: |
+        python scripts/update_dashboard.py
+    
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # Add changes
+        git add code_health_dashboard.html
+        
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "📊 Auto-update dashboard metrics - $(date +'%Y-%m-%d')"
+          git push
+          echo "Dashboard updated successfully!"
+        fi
+    
+    - name: Upload reports as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: analysis-reports
+        path: |
+          complexity_report.txt
+          churn_report.txt
+          coverage.json
+        retention-days: 30

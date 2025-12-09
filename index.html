@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Health Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
             min-height: 100vh;
@@ -24,24 +24,32 @@
             margin: 0 auto;
         }
 
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
 
-        header h1 {
-            font-size: 2.5em;
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .last-updated {
-            color: rgba(255,255,255,0.9);
-            font-size: 0.95em;
+        .header .subtitle {
+            color: #718096;
+            font-size: 1rem;
         }
 
-        .dashboard-grid {
+        .timestamp {
+            color: #a0aec0;
+            font-size: 0.875rem;
+            margin-top: 10px;
+        }
+
+        .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
@@ -50,23 +58,17 @@
 
         .card {
             background: white;
-            border-radius: 12px;
             padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .card h2 {
-            font-size: 1.4em;
+            color: #2d3748;
+            font-size: 1.25rem;
             margin-bottom: 20px;
-            color: #333;
-            border-bottom: 3px solid #667eea;
             padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
         }
 
         .chart-container {
@@ -74,295 +76,267 @@
             height: 300px;
         }
 
-        .win-card {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        .win-section {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            grid-column: span 1;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
 
-        .win-card h2 {
-            color: white;
-            border-bottom-color: rgba(255,255,255,0.5);
+        .win-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .win-content {
-            font-size: 1.5em;
-            text-align: center;
-            padding: 30px 0;
+        .win-section .trophy {
+            font-size: 2rem;
+        }
+
+        .win-section p {
+            font-size: 1.125rem;
             line-height: 1.6;
         }
 
-        .win-metric {
-            font-size: 2em;
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
-        }
-
-        .priority-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        .priority-section {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
-            grid-column: span 1;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .priority-card h2 {
-            color: white;
-            border-bottom-color: rgba(255,255,255,0.5);
-        }
-
-        .priority-content {
-            font-size: 1.2em;
-            text-align: center;
-            padding: 30px 0;
-            color: rgba(255,255,255,0.9);
-            font-style: italic;
-            min-height: 100px;
+        .priority-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 10px;
         }
 
-        .churn-table {
+        .priority-section .icon {
+            font-size: 2rem;
+        }
+
+        .priority-section p {
+            font-size: 1rem;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
         }
 
-        .churn-table th {
-            background: #f8f9fa;
-            padding: 12px;
+        th, td {
             text-align: left;
-            font-weight: 600;
-            color: #555;
-            border-bottom: 2px solid #dee2e6;
-        }
-
-        .churn-table td {
             padding: 12px;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .churn-table tr:hover {
-            background: #f8f9fa;
+        th {
+            background-color: #f7fafc;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .change-count {
+        td {
+            color: #4a5568;
+        }
+
+        .badge {
             display: inline-block;
             padding: 4px 12px;
             border-radius: 20px;
+            font-size: 0.875rem;
             font-weight: 600;
-            font-size: 0.9em;
         }
 
-        .critical {
-            background: #fee;
-            color: #c00;
+        .badge-high {
+            background-color: #fee2e2;
+            color: #991b1b;
         }
 
-        .warning {
-            background: #ffc;
-            color: #c80;
+        .badge-medium {
+            background-color: #fef3c7;
+            color: #92400e;
         }
 
-        .ok {
-            background: #efe;
-            color: #0a0;
+        .badge-low {
+            background-color: #d1fae5;
+            color: #065f46;
         }
 
-        .wide-card {
-            grid-column: span 2;
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-top: 10px;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .trend-up {
+            color: #10b981;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .trend-down {
+            color: #ef4444;
+            font-size: 0.875rem;
+            font-weight: 600;
         }
 
         @media (max-width: 768px) {
-            .dashboard-grid {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .grid {
                 grid-template-columns: 1fr;
-            }
-
-            .wide-card {
-                grid-column: span 1;
-            }
-
-            header h1 {
-                font-size: 1.8em;
-            }
-
-            .win-content {
-                font-size: 1.2em;
-            }
-
-            .win-metric {
-                font-size: 1.5em;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .card {
-                padding: 15px;
-            }
-
-            header h1 {
-                font-size: 1.5em;
             }
 
             .chart-container {
                 height: 250px;
             }
         }
-
-        .legend-item {
-            display: inline-block;
-            margin-right: 15px;
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .legend-dot {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-
-        .green { background: #38ef7d; }
-        .yellow { background: #ffd93d; }
-        .red { background: #f5576c; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
+        <!-- Header -->
+        <div class="header">
             <h1>📊 Code Health Dashboard</h1>
-            <p class="last-updated">Last Updated: <span id="timestamp"></span></p>
-        </header>
+            <p class="subtitle">Real-time metrics and trends for code quality</p>
+            <p class="timestamp" id="timestamp">Last updated: Loading...</p>
+        </div>
 
-        <div class="dashboard-grid">
-            <!-- Complexity Trends Chart -->
-            <div class="card wide-card">
-                <h2>Cyclomatic Complexity Trend (4 Weeks)</h2>
-                <div style="margin-bottom: 10px;">
-                    <span class="legend-item"><span class="legend-dot green"></span>Healthy (≤15)</span>
-                    <span class="legend-item"><span class="legend-dot yellow"></span>Watch (16-25)</span>
-                    <span class="legend-item"><span class="legend-dot red"></span>Action Needed (>25)</span>
-                </div>
+        <!-- This Sprint's Win -->
+        <div class="win-section">
+            <h2><span class="trophy">🏆</span> This Sprint's Win</h2>
+            <p>Reduced complexity in PaymentProcessor from <strong>42 → 28</strong></p>
+            <p style="margin-top: 10px; font-size: 0.95rem; opacity: 0.9;">
+                Applied guard clauses and extracted helper methods, reducing cyclomatic complexity by 33%
+            </p>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid">
+            <!-- Complexity Trend Chart -->
+            <div class="card" style="grid-column: span 2;">
+                <h2>Cyclomatic Complexity Trend (Last 4 Weeks)</h2>
                 <div class="chart-container">
                     <canvas id="complexityChart"></canvas>
                 </div>
             </div>
 
             <!-- Test Coverage Chart -->
-            <div class="card wide-card">
+            <div class="card">
                 <h2>Test Coverage by Module</h2>
-                <div style="margin-bottom: 10px;">
-                    <span class="legend-item"><span class="legend-dot green"></span>Healthy (>70%)</span>
-                    <span class="legend-item"><span class="legend-dot yellow"></span>Watch (40-70%)</span>
-                    <span class="legend-item"><span class="legend-dot red"></span>Action Needed (<40%)</span>
-                </div>
                 <div class="chart-container">
                     <canvas id="coverageChart"></canvas>
                 </div>
             </div>
+        </div>
 
-            <!-- Code Churn Hotspots -->
-            <div class="card wide-card">
-                <h2>Code Churn Hotspots (Last 30 Days)</h2>
-                <table class="churn-table">
+        <!-- Code Churn Table -->
+        <div class="card">
+            <h2>Code Churn Hotspots (Last 30 Days)</h2>
+            <div class="table-container">
+                <table>
                     <thead>
                         <tr>
                             <th>File</th>
-                            <th style="text-align: right;">Changes</th>
+                            <th>Changes</th>
+                            <th>Risk Level</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <tr>
-                        <td><strong>scripts/update_dashboard.py</strong></td>
-                        <td><span class="change-count">2</span></td>
-                        <td><span class="badge badge-green">Normal Activity</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>scripts/analyze_metrics.py</strong></td>
-                        <td><span class="change-count">1</span></td>
-                        <td><span class="badge badge-green">Normal Activity</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>python/customer_servlet.py</strong></td>
-                        <td><span class="change-count">1</span></td>
-                        <td><span class="badge badge-green">Normal Activity</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>python/invoice_dao.py</strong></td>
-                        <td><span class="change-count">1</span></td>
-                        <td><span class="badge badge-green">Normal Activity</span></td>
-                    </tr>
-                </tbody>
+                        <tr>
+                            <td><strong>InvoiceDAO.java</strong></td>
+                            <td>47 changes</td>
+                            <td><span class="badge badge-high">High</span></td>
+                            <td>Add test coverage, review for stability</td>
+                        </tr>
+                        <tr>
+                            <td><strong>BillingProcessor.java</strong></td>
+                            <td>31 changes</td>
+                            <td><span class="badge badge-medium">Medium</span></td>
+                            <td>Monitor for patterns</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaymentProcessor.java</strong></td>
+                            <td>23 changes</td>
+                            <td><span class="badge badge-medium">Medium</span></td>
+                            <td>Monitor for patterns</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AuthService.java</strong></td>
+                            <td>12 changes</td>
+                            <td><span class="badge badge-low">Low</span></td>
+                            <td>Continue monitoring</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
+        </div>
 
-            <!-- This Sprint's Win -->
-            <div class="card win-card">
-                <h2>🎉 This Sprint's Win</h2>
-                <div class="win-content">
-                    Reduced complexity in PaymentProcessor
-                    <span class="win-metric">42 → 28</span>
-                </div>
-            </div>
-
-            <!-- Next Priority -->
-            <div class="card priority-card">
-                <h2>🎯 Next Priority</h2>
-                <div class="priority-content">
-                    To be determined...
-                </div>
-            </div>
+        <!-- Next Priority -->
+        <div class="priority-section">
+            <h2><span class="icon">🎯</span> Next Priority</h2>
+            <p>To be determined in next planning session...</p>
         </div>
     </div>
 
     <script>
-        // Set last updated timestamp
-        document.getElementById('timestamp').textContent = new Date().toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-
-        // Color function based on thresholds
-        function getComplexityColor(value) {
-            if (value <= 15) return '#38ef7d';
-            if (value <= 25) return '#ffd93d';
-            return '#f5576c';
-        }
-
-        function getCoverageColor(value) {
-            if (value > 70) return '#38ef7d';
-            if (value >= 40) return '#ffd93d';
-            return '#f5576c';
-        }
+        // Update timestamp
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        };
+        document.getElementById('timestamp').textContent = 
+            'Last updated: ' + now.toLocaleDateString('en-US', options);
 
         // Complexity Trend Chart
         const complexityCtx = document.getElementById('complexityChart').getContext('2d');
-        const complexityData = [36, 34, 32, 30];
-        
-        new Chart(complexityCtx, {
+        const complexityChart = new Chart(complexityCtx, {
             type: 'line',
             data: {
                 labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
                 datasets: [{
                     label: 'Cyclomatic Complexity',
-                    data: complexityData,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    data: [38, 35, 32, 30],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
                     pointRadius: 6,
                     pointHoverRadius: 8,
-                    pointBackgroundColor: complexityData.map(v => getComplexityColor(v)),
+                    pointBackgroundColor: '#10b981',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2
                 }]
@@ -372,32 +346,53 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14,
+                                weight: '600'
+                            }
+                        }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         padding: 12,
-                        titleFont: { size: 14 },
-                        bodyFont: { size: 13 }
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return 'Complexity: ' + context.parsed.y;
+                            }
+                        }
                     }
                 },
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        max: 50,
-                        grid: {
-                            color: 'rgba(0,0,0,0.05)'
-                        },
+                        beginAtZero: false,
+                        min: 20,
+                        max: 45,
                         ticks: {
-                            font: { size: 12 }
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
                     x: {
+                        ticks: {
+                            font: {
+                                size: 12
+                            }
+                        },
                         grid: {
                             display: false
-                        },
-                        ticks: {
-                            font: { size: 12 }
                         }
                     }
                 }
@@ -406,23 +401,27 @@
 
         // Test Coverage Chart
         const coverageCtx = document.getElementById('coverageChart').getContext('2d');
-        const coverageData = [
-            { module: 'AuthService', coverage: 85 },
-            { module: 'PaymentProcessor', coverage: 42 },
-            { module: 'InvoiceDAO', coverage: 28 },
-            { module: 'CustomerServlet', coverage: 12 },
-        ];
-
-        new Chart(coverageCtx, {
+        const coverageChart = new Chart(coverageCtx, {
             type: 'bar',
             data: {
-                labels: coverageData.map(d => d.module),
+                labels: ['AuthService', 'PaymentProcessor', 'InvoiceDAO', 'CustomerServlet'],
                 datasets: [{
-                    label: 'Test Coverage %',
-                    data: coverageData.map(d => d.coverage),
-                    backgroundColor: coverageData.map(d => getCoverageColor(d.coverage)),
-                    borderRadius: 8,
-                    borderSkipped: false
+                    label: 'Test Coverage (%)',
+                    data: [85, 42, 28, 12],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)',  // Green - healthy
+                        'rgba(251, 191, 36, 0.8)',  // Yellow - watch
+                        'rgba(239, 68, 68, 0.8)',   // Red - action needed
+                        'rgba(239, 68, 68, 0.8)'    // Red - action needed
+                    ],
+                    borderColor: [
+                        '#10b981',
+                        '#f59e0b',
+                        '#ef4444',
+                        '#ef4444'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 6
                 }]
             },
             options: {
@@ -434,13 +433,17 @@
                         display: false
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         padding: 12,
-                        titleFont: { size: 14 },
-                        bodyFont: { size: 13 },
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
                         callbacks: {
                             label: function(context) {
-                                return context.parsed.x + '% coverage';
+                                return 'Coverage: ' + context.parsed.x + '%';
                             }
                         }
                     }
@@ -449,22 +452,26 @@
                     x: {
                         beginAtZero: true,
                         max: 100,
-                        grid: {
-                            color: 'rgba(0,0,0,0.05)'
-                        },
                         ticks: {
+                            font: {
+                                size: 12
+                            },
                             callback: function(value) {
                                 return value + '%';
-                            },
-                            font: { size: 12 }
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
                     y: {
+                        ticks: {
+                            font: {
+                                size: 12
+                            }
+                        },
                         grid: {
                             display: false
-                        },
-                        ticks: {
-                            font: { size: 12 }
                         }
                     }
                 }
